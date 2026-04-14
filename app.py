@@ -371,6 +371,58 @@ def main():
                 plt.tight_layout()
                 st.pyplot(fig_a)
 
+                # --- 3b. Andamento per singola area (3 giorni sovrapposti) ---
+                st.subheader("Andamento Singola Area - Confronto Giorni")
+                single_area = st.selectbox("Area", sorted(sel_areas), key="single_area")
+                sa_cap = area_cap.get(single_area, 0)
+                sa_df = df_area_f[df_area_f["area"] == single_area]
+
+                fig_sa, ax_sa = plt.subplots(figsize=(14, 5))
+                for day in sorted(sa_df["giorno"].unique()):
+                    ddf = sa_df[sa_df["giorno"] == day].sort_values("ora")
+                    ax_sa.plot(ddf["ora_label"], ddf["car"],
+                               marker="o", linewidth=2, markersize=6,
+                               color=colors.get(day, "gray"),
+                               label=day_labels.get(day, day))
+                if sa_cap > 0:
+                    ax_sa.axhline(sa_cap, color="red", linestyle="--", alpha=0.6, linewidth=1.5,
+                                  label=f"Capacita ({sa_cap})")
+                ax_sa.set_xlabel("Ora")
+                ax_sa.set_ylabel("Auto")
+                ax_sa.set_title(f"{single_area} — Andamento 3 Giorni")
+                ax_sa.legend()
+                ax_sa.grid(True, alpha=0.3)
+                plt.xticks(rotation=45)
+                plt.tight_layout()
+                st.pyplot(fig_sa)
+
+                # Mini-griglia: tutti i grafici per area
+                st.subheader("Panoramica Tutte le Aree")
+                areas_sorted = sorted(sel_areas)
+                n_areas = len(areas_sorted)
+                cols_per_row = 3
+                for row_start in range(0, n_areas, cols_per_row):
+                    row_areas = areas_sorted[row_start:row_start + cols_per_row]
+                    st_cols = st.columns(len(row_areas))
+                    for ci, area in enumerate(row_areas):
+                        with st_cols[ci]:
+                            cap = area_cap.get(area, 0)
+                            adf = df_area_f[df_area_f["area"] == area]
+                            fig_mini, ax_mini = plt.subplots(figsize=(5, 3))
+                            for day in sorted(adf["giorno"].unique()):
+                                ddf = adf[adf["giorno"] == day].sort_values("ora")
+                                ax_mini.plot(ddf["ora_label"], ddf["car"],
+                                             marker=".", linewidth=1.5, markersize=3,
+                                             color=colors.get(day, "gray"))
+                            if cap > 0:
+                                ax_mini.axhline(cap, color="red", linestyle="--", alpha=0.4, linewidth=1)
+                            ax_mini.set_title(f"{area} ({cap}p)", fontsize=10)
+                            ax_mini.tick_params(axis="x", rotation=60, labelsize=6)
+                            ax_mini.tick_params(axis="y", labelsize=7)
+                            ax_mini.grid(True, alpha=0.2)
+                            plt.tight_layout()
+                            st.pyplot(fig_mini)
+
                 # --- 4. Picco per area (bar chart 3 giorni) ---
                 st.subheader("Picco Giornaliero per Area")
                 days_in = sorted(df_area_f["giorno"].unique())
