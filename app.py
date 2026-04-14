@@ -397,6 +397,9 @@ def main():
                                marker="o", linewidth=2, markersize=6,
                                color=colors.get(day, "gray"),
                                label=day_labels.get(day, day))
+                sa_max = sa_df["car"].max()
+                sa_ytop = max(sa_max, sa_cap) * 1.1 if sa_cap > 0 else sa_max * 1.15
+                ax_sa.set_ylim(0, max(sa_ytop, 5))
                 if sa_cap > 0:
                     ax_sa.axhline(sa_cap, color="red", linestyle="--", alpha=0.6, linewidth=1.5,
                                   label=f"Capacita ({sa_cap})")
@@ -428,13 +431,17 @@ def main():
                                 ax_mini.plot(xv, ddf["car"],
                                              marker=".", linewidth=1.5, markersize=3,
                                              color=colors.get(day, "gray"))
+                            # Scala Y: 0 fino a max(dati, capacita) + 10% margine
+                            max_val = adf["car"].max()
+                            y_top = max(max_val, cap) * 1.1 if cap > 0 else max_val * 1.15
+                            ax_mini.set_ylim(0, max(y_top, 5))
+
                             if cap > 0:
                                 ax_mini.axhline(cap, color="red", linestyle="--", alpha=0.4, linewidth=1)
                             # Tick semplificati per mini-grafici
                             mini_hours = sorted(adf["ora"].unique())
                             mini_tv = [_ora_float(h) for h in mini_hours]
                             mini_tl = [f"{str(int(h)).zfill(4)[:2]}:00" for h in mini_hours]
-                            # Mostra solo ogni 2-3 ore per non affollare
                             step = max(1, len(mini_tv) // 5)
                             ax_mini.set_xticks(mini_tv[::step])
                             ax_mini.set_xticklabels(mini_tl[::step], rotation=45, ha="right", fontsize=6)
