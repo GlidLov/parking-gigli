@@ -175,14 +175,20 @@ def main():
         (df["ora_label"].isin(selected_hours))
     ]
 
-    # KPI
+    # KPI — font ridotto per evitare troncamento
+    st.markdown("""<style>
+    [data-testid="stMetric"] { font-size: 0.85rem; }
+    [data-testid="stMetricValue"] { font-size: 1.3rem; }
+    [data-testid="stMetricLabel"] { font-size: 0.75rem; }
+    </style>""", unsafe_allow_html=True)
+
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Rilevamenti totali", f"{df_filtered['total'].sum():,}")
+    col1.metric("Totale rilevamenti", f"{df_filtered['total'].sum():,}")
     col2.metric("Media oraria", f"{df_filtered['total'].mean():.0f}")
-    col3.metric("Picco massimo", f"{df_filtered['total'].max():,}")
+    col3.metric("Picco max", f"{df_filtered['total'].max():,}")
     if len(df_filtered) > 0:
         peak_row = df_filtered.loc[df_filtered["total"].idxmax()]
-        col4.metric("Ora di picco",
+        col4.metric("Ora picco",
                      f"{day_labels.get(peak_row['giorno'], peak_row['giorno'])} {peak_row['ora_label']}")
 
     st.divider()
@@ -416,7 +422,14 @@ def main():
     # Confronto foto tra giorni
     st.divider()
     st.subheader("Confronto Foto tra Giorni")
-    st.caption("Seleziona un'ora e una foto per confrontare la stessa posizione in giorni diversi.")
+
+    # Verifica se le foto sono disponibili localmente
+    _has_photos = DETECTIONS_DIR.exists() and any(DETECTIONS_DIR.iterdir()) if DETECTIONS_DIR.exists() else False
+    if not _has_photos:
+        st.info("Le foto annotate non sono disponibili in questa versione cloud. "
+                "Per visualizzare le foto con le detection, usa la versione locale della dashboard.")
+    else:
+        st.caption("Seleziona un'ora e una foto per confrontare la stessa posizione in giorni diversi.")
 
     cmp_col1, cmp_col2 = st.columns(2)
     with cmp_col1:
