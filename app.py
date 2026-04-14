@@ -2,10 +2,17 @@
 
 import json
 import math
+import sys
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
+
+# Assicura che la directory dell'app sia nel path
+APP_DIR = Path(__file__).resolve().parent
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
+
 from config import (RESULTS_CSV, CHARTS_DIR, DETECTIONS_DIR, DETECTIONS_JSON,
                     RESULTS_AREA_CSV, DATA_DIR, PARKING_AREAS, AREA_POLYGONS,
                     PHOTO_INDEX_TO_AREA, DAY_LABELS, DAY_COLORS)
