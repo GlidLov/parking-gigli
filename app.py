@@ -278,6 +278,17 @@ def main():
             pass  # AREA_POLYGONS already imported at top
             area_cap = {a["label"]: a["capacity"] for a in AREA_POLYGONS}
 
+            def _ora_float(v):
+                s = str(int(v)).zfill(4)
+                return int(s[:2]) + int(s[2:]) / 60
+
+            def _set_ora_ticks(ax, df_sub):
+                all_h = sorted(df_sub["ora"].unique())
+                tv = [_ora_float(h) for h in all_h]
+                tl = [f"{str(int(h)).zfill(4)[:2]}:{str(int(h)).zfill(4)[2:]}" for h in all_h]
+                ax.set_xticks(tv)
+                ax.set_xticklabels(tl, rotation=45, ha="right")
+
             df_area["ora"] = df_area["ora"].astype(int)
             df_area_f = df_area[
                 (df_area["giorno"].isin(selected_days)) &
@@ -359,15 +370,16 @@ def main():
                     adf = df_ad[df_ad["area"] == area].sort_values("ora")
                     cap = area_cap.get(area, 0)
                     lbl = f"{area} ({cap}p)" if cap else area
-                    ax_a.plot(adf["ora_label"], adf["car"],
+                    xv = [_ora_float(o) for o in adf["ora"]]
+                    ax_a.plot(xv, adf["car"],
                               marker="o", linewidth=2, markersize=5,
                               color=area_colors_map.get(area, "gray"), label=lbl)
+                _set_ora_ticks(ax_a, df_ad)
                 ax_a.set_xlabel("Ora")
                 ax_a.set_ylabel("Auto")
                 ax_a.set_title(f"Andamento per Area - {day_labels.get(and_day, and_day)}")
                 ax_a.legend(loc="upper left", fontsize=8, ncol=2)
                 ax_a.grid(True, alpha=0.3)
-                plt.xticks(rotation=45)
                 plt.tight_layout()
                 st.pyplot(fig_a)
 
@@ -380,19 +392,20 @@ def main():
                 fig_sa, ax_sa = plt.subplots(figsize=(14, 5))
                 for day in sorted(sa_df["giorno"].unique()):
                     ddf = sa_df[sa_df["giorno"] == day].sort_values("ora")
-                    ax_sa.plot(ddf["ora_label"], ddf["car"],
+                    xv = [_ora_float(o) for o in ddf["ora"]]
+                    ax_sa.plot(xv, ddf["car"],
                                marker="o", linewidth=2, markersize=6,
                                color=colors.get(day, "gray"),
                                label=day_labels.get(day, day))
                 if sa_cap > 0:
                     ax_sa.axhline(sa_cap, color="red", linestyle="--", alpha=0.6, linewidth=1.5,
                                   label=f"Capacita ({sa_cap})")
+                _set_ora_ticks(ax_sa, sa_df)
                 ax_sa.set_xlabel("Ora")
                 ax_sa.set_ylabel("Auto")
                 ax_sa.set_title(f"{single_area} — Andamento 3 Giorni")
                 ax_sa.legend()
                 ax_sa.grid(True, alpha=0.3)
-                plt.xticks(rotation=45)
                 plt.tight_layout()
                 st.pyplot(fig_sa)
 
@@ -411,13 +424,21 @@ def main():
                             fig_mini, ax_mini = plt.subplots(figsize=(5, 3))
                             for day in sorted(adf["giorno"].unique()):
                                 ddf = adf[adf["giorno"] == day].sort_values("ora")
-                                ax_mini.plot(ddf["ora_label"], ddf["car"],
+                                xv = [_ora_float(o) for o in ddf["ora"]]
+                                ax_mini.plot(xv, ddf["car"],
                                              marker=".", linewidth=1.5, markersize=3,
                                              color=colors.get(day, "gray"))
                             if cap > 0:
                                 ax_mini.axhline(cap, color="red", linestyle="--", alpha=0.4, linewidth=1)
+                            # Tick semplificati per mini-grafici
+                            mini_hours = sorted(adf["ora"].unique())
+                            mini_tv = [_ora_float(h) for h in mini_hours]
+                            mini_tl = [f"{str(int(h)).zfill(4)[:2]}:00" for h in mini_hours]
+                            # Mostra solo ogni 2-3 ore per non affollare
+                            step = max(1, len(mini_tv) // 5)
+                            ax_mini.set_xticks(mini_tv[::step])
+                            ax_mini.set_xticklabels(mini_tl[::step], rotation=45, ha="right", fontsize=6)
                             ax_mini.set_title(f"{area} ({cap}p)", fontsize=10)
-                            ax_mini.tick_params(axis="x", rotation=60, labelsize=6)
                             ax_mini.tick_params(axis="y", labelsize=7)
                             ax_mini.grid(True, alpha=0.2)
                             plt.tight_layout()
