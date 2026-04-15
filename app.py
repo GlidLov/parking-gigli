@@ -127,11 +127,53 @@ def load_photo_counts() -> dict:
 
 @st.cache_data(ttl=60)
 def load_area_data() -> pd.DataFrame:
-    """Carica il CSV con i conteggi per area."""
+    """Carica il CSV con i conteggi per area, interpolando 08:00/09:00 del venerdì."""
     area_csv = RESULTS_AREA_CSV
     if not area_csv.exists():
         return pd.DataFrame()
-    return pd.read_csv(area_csv)
+    df = pd.read_csv(area_csv)
+    # Interpola 08:00 e 09:00 del venerdì 10/04 (mancanti) usando ratio da sab/dom
+    fri = "2026-04-10"
+    df["ora"] = df["ora"].astype(int)
+    fri_hours = set(df[df["giorno"] == fri]["ora"].unique())
+    if 800 not in fri_hours or 900 not in fri_hours:
+        other_days = df[df["giorno"] != fri]
+        fri_df = df[df["giorno"] == fri]
+        new_rows = []
+        for area in fri_df["area"].unique():
+            fri_area = fri_df[fri_df["area"] == area]
+            if fri_area.empty:
+                continue
+            first_h = fri_area["ora"].min()  # tipicamente 1000
+            first_row = fri_area[fri_area["ora"] == first_h].iloc[0]
+            # Calcola ratio medio da altri giorni: h/first_h
+            for h in [800, 900]:
+                if h in fri_hours:
+                    continue
+                ratios = []
+                for od in other_days["giorno"].unique():
+                    od_area = other_days[(other_days["giorno"] == od) & (other_days["area"] == area)]
+                    h_row = od_area[od_area["ora"] == h]
+                    ref_row = od_area[od_area["ora"] == first_h]
+                    if not h_row.empty and not ref_row.empty and ref_row["total"].values[0] > 0:
+                        ratios.append(h_row["total"].values[0] / ref_row["total"].values[0])
+                if not ratios:
+                    continue
+                r = sum(ratios) / len(ratios)
+                ora_str = str(h).zfill(4)
+                new_rows.append({
+                    "giorno": fri, "ora": h,
+                    "ora_label": f"{ora_str[:2]}:{ora_str[2:]}",
+                    "area": area,
+                    "car": round(first_row["car"] * r),
+                    "bus": round(first_row["bus"] * r),
+                    "truck": round(first_row["truck"] * r),
+                    "total": round(first_row["total"] * r),
+                })
+        if new_rows:
+            df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+            df = df.sort_values(["giorno", "ora", "area"]).reset_index(drop=True)
+    return df
 
 
 @st.cache_data(ttl=60)
