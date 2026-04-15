@@ -49,7 +49,7 @@ PARKING_AREAS = {a["id"]: {"lat": sum(p[0] for p in a["polygon"])/4, "lon": sum(
 st.set_page_config(page_title="Parcheggio I Gigli - Analisi", layout="wide")
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_photo_area_map() -> dict:
     """Mappa ogni foto alla sua area parcheggio usando il mapping manuale per indice.
 
@@ -88,7 +88,7 @@ def load_photo_area_map() -> dict:
     return photo_map
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_photo_counts() -> dict:
     """Conta veicoli (solo car) per ogni foto, da detections_raw.json.
 
@@ -125,7 +125,7 @@ def load_photo_counts() -> dict:
     return counts
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_area_data() -> pd.DataFrame:
     """Carica il CSV con i conteggi per area."""
     area_csv = RESULTS_AREA_CSV
@@ -134,7 +134,7 @@ def load_area_data() -> pd.DataFrame:
     return pd.read_csv(area_csv)
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_data() -> pd.DataFrame:
     if not RESULTS_CSV.exists():
         st.error(f"CSV non trovato: {RESULTS_CSV}. Esegui prima la pipeline.")
