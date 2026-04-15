@@ -173,10 +173,11 @@ def load_area_data() -> pd.DataFrame:
         if new_rows:
             df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
             df = df.sort_values(["giorno", "ora", "area"]).reset_index(drop=True)
-    # Correzione Area 9: sottrai ~10 auto nelle ore centrali (striscia dx non è Area 9)
+    # Correzione Area 9: striscia dx non è Area 9 (~35% delle detection)
     mask_a9 = (df["area"] == "Area 9") & (df["ora"] >= 1000) & (df["ora"] <= 1900)
-    df.loc[mask_a9, "car"] = (df.loc[mask_a9, "car"] - 10).clip(lower=0)
-    df.loc[mask_a9, "total"] = (df.loc[mask_a9, "total"] - 10).clip(lower=0)
+    df.loc[mask_a9, "car"] = df.loc[mask_a9, "car"].apply(lambda x: round(x * 0.65))
+    df.loc[mask_a9, "truck"] = df.loc[mask_a9, "truck"].apply(lambda x: round(x * 0.65))
+    df.loc[mask_a9, "total"] = df.loc[mask_a9, ["car", "bus", "truck"]].sum(axis=1)
     return df
 
 
