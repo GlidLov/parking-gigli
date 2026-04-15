@@ -335,14 +335,24 @@ def main():
                                        format_func=lambda d: day_labels.get(d, d), key="hm_day")
                 df_hm = df_area_f[df_area_f["giorno"] == hm_day]
                 if not df_hm.empty:
-                    pivot = df_hm.pivot_table(index="area", columns="ora_label", values="car", aggfunc="first")
+                    pivot_raw = df_hm.pivot_table(index="area", columns="ora_label", values="car", aggfunc="first")
+                    pivot = pivot_raw.fillna(0)
                     pct = pivot.astype(float).copy()
                     for area in pct.index:
                         cap = area_cap.get(area, 1)
                         pct.loc[area] = pct.loc[area] / cap * 100
 
+                    from matplotlib.colors import LinearSegmentedColormap
+                    hm_cmap = LinearSegmentedColormap.from_list("occ", [
+                        (0.0, "#1a9641"),
+                        (0.3, "#a6d96a"),
+                        (0.5, "#ffffbf"),
+                        (0.7, "#fdae61"),
+                        (1.0, "#d7191c"),
+                    ])
+
                     fig_hm, ax_hm = plt.subplots(figsize=(16, max(4, len(pivot.index) * 0.7)))
-                    im = ax_hm.imshow(pct.values, cmap="RdYlGn_r", aspect="auto", vmin=0, vmax=100)
+                    im = ax_hm.imshow(pct.values, cmap=hm_cmap, aspect="auto", vmin=0, vmax=100)
                     ax_hm.set_xticks(range(len(pivot.columns)))
                     ax_hm.set_xticklabels(pivot.columns, rotation=45, ha="right")
                     ax_hm.set_yticks(range(len(pivot.index)))
@@ -352,7 +362,7 @@ def main():
                             val = pivot.values[i, j]
                             pval = pct.values[i, j]
                             if not pd.isna(val):
-                                color = "white" if pval > 50 else "black"
+                                color = "black"
                                 ax_hm.text(j, i, f"{int(val)}\n{pval:.0f}%", ha="center", va="center",
                                            fontsize=8, fontweight="bold", color=color)
                     plt.colorbar(im, ax=ax_hm, label="% Occupazione", shrink=0.8)
