@@ -667,12 +667,6 @@ def main():
                 for x in rc:
                     st.markdown(f"- {x}")
 
-            ns = vf.get("next_steps", [])
-            if ns:
-                st.subheader("Prossimi passi")
-                for i, x in enumerate(ns, 1):
-                    st.markdown(f"{i}. {x}")
-
     # Tabella dati
     st.divider()
     st.subheader("Dati Tabulari")

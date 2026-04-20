@@ -97,10 +97,5 @@
     "Maschera poligonale Area 7 potrebbe escludere parte del parcheggio reale",
     "Area 10: possibile inclusione erronea di veicoli su strada adiacente nei primi processing run",
     "Area 3: foto oblique da lontano penalizzano il modello di rilevamento generalista - richiede un modello specializzato su riprese aeree oblique o foto nadir"
-  ],
-  "next_steps": [
-    "Ri-processare tutto il dataset con pipeline migliorata (inferenza sliced 320px + ROI cleanup) per verificare se il pattern Area 7 +120 e sistematico su tutte le ore",
-    "Verificare maschere poligonali Area 3, 7, 10 sulla mappa",
-    "Valutare fine-tuning del modello di rilevamento su dataset aerial oblique per migliorare accuratezza sulle riprese difficili"
   ]
 }
