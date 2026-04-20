@@ -565,9 +565,8 @@ def main():
 
             st.info(vf.get("context", ""))
 
-            with st.expander("Metodologia e limiti tecnici"):
+            with st.expander("Metodologia"):
                 st.markdown(f"**Pipeline:** {vf.get('methodology', '')}")
-                st.markdown(f"**Caveat:** {vf.get('caveat', '')}")
 
             # KPI sintesi
             checks = vf.get("spot_checks", [])

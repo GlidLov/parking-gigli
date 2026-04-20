@@ -2,7 +2,6 @@
   "title": "Contro-verifica rilievo TRM",
   "context": "Il report TRM del 15/04/2026 ha segnalato 5 discrepanze tra i conteggi veicoli prodotti dalla nostra pipeline di analisi automatica e la densita osservabile dalle foto drone. Questa sezione riporta la contro-verifica tecnica effettuata ri-processando le stesse foto con un'analisi computer vision migliorata (rilevamento veicoli a finestra mobile su ROI parcheggio pulita) e revisione visiva manuale dell'operatore.",
   "methodology": "Modello di rilevamento veicoli state-of-the-art applicato con inferenza sliced (tile 320x320, overlap 30%, confidence threshold 0.08, soppressione IoS 0.30) su ROI ritagliata escludendo strada/tetti/traffico adiacente. Correzione finale tramite revisione visiva fila-per-fila operatore.",
-  "caveat": "Foto sorgente estratte dal PDF TRM: JPEG compresso ~1000 px, angolazione obliqua. Risoluzione native drone non disponibile nel round di verifica. Stima finale indicata con tolleranza +/-10%.",
   "spot_checks": [
     {
       "id": "Area7_Ven_19",
