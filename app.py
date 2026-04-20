@@ -594,7 +594,7 @@ def main():
                     "Offerta": c.get("capacity"),
                     "Originale": c.get("our_original_count"),
                     "% orig": f"{c.get('our_original_pct', 0):.1f}%",
-                    "YOLO ROI": c.get("yolo_roi_count"),
+                    "Rilevamento AI": c.get("yolo_roi_count"),
                     "Stima finale": c.get("visual_final_estimate"),
                     "% finale": f"{c.get('visual_final_pct', 0):.1f}%",
                     "Δ": f"{c.get('delta_vs_original', 0):+d}",
@@ -635,7 +635,7 @@ def main():
             m1.metric("Offerta posti", c.get("capacity"))
             m2.metric("Conteggio originale", c.get("our_original_count"),
                       f"{c.get('our_original_pct', 0):.1f}%")
-            m3.metric("YOLO ROI (ri-verifica)", c.get("yolo_roi_count"))
+            m3.metric("Rilevamento AI (ri-verifica)", c.get("yolo_roi_count"))
             m4.metric("Stima finale", c.get("visual_final_estimate"),
                       f"{c.get('delta_vs_original', 0):+d} auto")
 
@@ -649,11 +649,11 @@ def main():
                 else:
                     st.warning("Foto ROI non trovata")
             with img_col2:
-                st.caption("Detection YOLO SAHI ri-verifica")
+                st.caption("Rilevamento veicoli ri-verifica (analisi AI)")
                 if p_yolo.exists():
                     st.image(str(p_yolo), use_container_width=True)
                 else:
-                    st.warning("Foto YOLO non trovata")
+                    st.warning("Foto rilevamento non trovata")
 
             if c.get("notes"):
                 st.info(c["notes"])
