@@ -15,6 +15,8 @@ RESULTS_CSV = DATA_DIR / "results.csv"
 RESULTS_AREA_CSV = DATA_DIR / "results_per_area.csv"
 DETECTIONS_JSON = DATA_DIR / "detections_raw.json"
 DETECTIONS_DIR = DATA_DIR / "detections"
+VERIFICA_TRM_DIR = DATA_DIR / "verifica_trm"
+VERIFICA_TRM_JSON = VERIFICA_TRM_DIR / "verifica_trm.json"
 
 DAY_LABELS = {"2026-04-10": "Ven 10/04", "2026-04-11": "Sab 11/04", "2026-04-12": "Dom 12/04"}
 DAY_COLORS = {"2026-04-10": "#2196F3", "2026-04-11": "#FF9800", "2026-04-12": "#4CAF50"}
@@ -237,7 +239,10 @@ def main():
     st.divider()
 
     # Grafico andamento
-    tab1, tab2, tab3, tab4 = st.tabs(["Andamento Orario", "Heatmap", "Confronto Giorni", "Per Area"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "Andamento Orario", "Heatmap", "Confronto Giorni", "Per Area",
+        "Contro-verifica TRM",
+    ])
 
     with tab1:
         def ora_to_float(v):
@@ -543,6 +548,131 @@ def main():
                 st.dataframe(pivot_det, use_container_width=True)
             else:
                 st.info("Nessun dato per i filtri selezionati.")
+
+    with tab5:
+        st.header("Contro-verifica report TRM Group")
+        if not VERIFICA_TRM_JSON.exists():
+            st.info("Report di contro-verifica non disponibile.")
+        else:
+            with open(VERIFICA_TRM_JSON, "r", encoding="utf-8") as _f:
+                vf = json.load(_f)
+
+            st.caption(
+                "TRM Group (revisore esterno certificato ISO 9001:2015) ha identificato "
+                "5 discrepanze tra i conteggi veicoli della pipeline automatica e la densita "
+                "osservabile dalle foto drone. Questa sezione riporta la ri-verifica tecnica."
+            )
+
+            st.info(vf.get("context", ""))
+
+            with st.expander("Metodologia e limiti tecnici"):
+                st.markdown(f"**Pipeline:** {vf.get('methodology', '')}")
+                st.markdown(f"**Caveat:** {vf.get('caveat', '')}")
+
+            # KPI sintesi
+            checks = vf.get("spot_checks", [])
+            n_sotto = sum(1 for c in checks if c.get("verdict") == "SOTTOSTIMA")
+            n_sovra = sum(1 for c in checks if c.get("verdict") == "SOVRASTIMA")
+            n_crit = sum(1 for c in checks if c.get("gravity") == "CRITICA")
+            delta_tot = sum(c.get("delta_vs_original", 0) for c in checks)
+
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Discrepanze verificate", f"{len(checks)}/5")
+            k2.metric("Sottostime", n_sotto)
+            k3.metric("Gravita critica", n_crit)
+            k4.metric("Δ auto (netto)", f"{delta_tot:+d}")
+
+            st.divider()
+
+            # Tabella comparativa
+            st.subheader("Tabella comparativa")
+            table_rows = []
+            for c in checks:
+                table_rows.append({
+                    "Area": c.get("area"),
+                    "Giorno/Ora": f"{c.get('day_label', '')[:3]}. {c.get('hour', '')}",
+                    "Offerta": c.get("capacity"),
+                    "Originale": c.get("our_original_count"),
+                    "% orig": f"{c.get('our_original_pct', 0):.1f}%",
+                    "YOLO ROI": c.get("yolo_roi_count"),
+                    "Stima finale": c.get("visual_final_estimate"),
+                    "% finale": f"{c.get('visual_final_pct', 0):.1f}%",
+                    "Δ": f"{c.get('delta_vs_original', 0):+d}",
+                    "Esito": c.get("verdict"),
+                    "Gravita": c.get("gravity"),
+                })
+            st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
+
+            st.divider()
+
+            # Analisi fotografica dettagliata
+            st.subheader("Analisi fotografica")
+            check_labels = [
+                f"{c['area']} - {c['day_label'][:3]}. {c['hour']} "
+                f"(orig {c['our_original_count']} - stima {c['visual_final_estimate']})"
+                for c in checks
+            ]
+            sel_idx = st.selectbox(
+                "Seleziona caso", range(len(checks)),
+                format_func=lambda i: check_labels[i],
+                key="verifica_sel",
+            )
+            c = checks[sel_idx]
+
+            gravity = c.get("gravity", "")
+            gcolor = {"CRITICA": "#d7191c", "ALTA": "#fdae61", "MEDIA": "#ffffbf"}.get(gravity, "#8a949e")
+            st.markdown(
+                f"### {c.get('area')} - {c.get('day_label')} ore {c.get('hour')}"
+            )
+            st.markdown(
+                f"<span style='background:{gcolor};color:white;padding:4px 12px;"
+                f"border-radius:4px;font-weight:bold'>GRAVITA: {gravity}</span> "
+                f"<span style='color:#888'>Esito: {c.get('verdict')}</span>",
+                unsafe_allow_html=True,
+            )
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Offerta posti", c.get("capacity"))
+            m2.metric("Conteggio originale", c.get("our_original_count"),
+                      f"{c.get('our_original_pct', 0):.1f}%")
+            m3.metric("YOLO ROI (ri-verifica)", c.get("yolo_roi_count"))
+            m4.metric("Stima finale", c.get("visual_final_estimate"),
+                      f"{c.get('delta_vs_original', 0):+d} auto")
+
+            img_col1, img_col2 = st.columns(2)
+            p_orig = VERIFICA_TRM_DIR / c.get("photo_original", "")
+            p_yolo = VERIFICA_TRM_DIR / c.get("photo_yolo", "")
+            with img_col1:
+                st.caption("Foto ROI parcheggio (originale, ritaglio pulito)")
+                if p_orig.exists():
+                    st.image(str(p_orig), use_container_width=True)
+                else:
+                    st.warning("Foto ROI non trovata")
+            with img_col2:
+                st.caption("Detection YOLO SAHI ri-verifica")
+                if p_yolo.exists():
+                    st.image(str(p_yolo), use_container_width=True)
+                else:
+                    st.warning("Foto YOLO non trovata")
+
+            if c.get("notes"):
+                st.info(c["notes"])
+
+            st.divider()
+            st.subheader("Pattern identificato")
+            st.warning(vf.get("pattern", ""))
+
+            rc = vf.get("root_causes_hypothesis", [])
+            if rc:
+                st.subheader("Ipotesi root cause")
+                for x in rc:
+                    st.markdown(f"- {x}")
+
+            ns = vf.get("next_steps", [])
+            if ns:
+                st.subheader("Prossimi passi")
+                for i, x in enumerate(ns, 1):
+                    st.markdown(f"{i}. {x}")
 
     # Tabella dati
     st.divider()
